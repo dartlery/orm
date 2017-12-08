@@ -2,24 +2,26 @@ import 'dart:async';
 import 'package:logging/logging.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 import 'package:connection_pool/connection_pool.dart';
+import 'mongo_database.dart';
+import '../exceptions/duplicate_item_exception.dart';
 
-class _MongoDbConnectionPool extends ConnectionPool<Db> {
+class MongoDbConnectionPool extends ConnectionPool<MongoDatabase> {
   static final Logger _log = new Logger('_MongoDbConnectionPool');
 
   final String uri;
 
-  _MongoDbConnectionPool(this.uri, [int poolSize = 5]) : super(poolSize);
+  MongoDbConnectionPool(this.uri, [int poolSize = 5]) : super(poolSize);
 
   @override
-  void closeConnection(Db conn) {
+  void closeConnection(MongoDatabase db) {
     _log.info("Closing mongo connection");
-    conn.close();
+    db.close();
   }
 
   @override
-  Future<Db> openNewConnection() async {
+  Future<MongoDatabase> openNewConnection() async {
     _log.info("Opening mongo connection");
-    final Db conn = new Db(uri);
+    final MongoDatabase conn = new MongoDatabase(uri);
     if (await conn.open())
       return conn;
     else
@@ -32,10 +34,10 @@ class _MongoDbConnectionPool extends ConnectionPool<Db> {
     // Otherwise it might run out of retries before invalidating every potentially disconnected connection in the pool.
     for (int i = 0; i < retries; i++) {
       bool closeConnection = false;
-      final ManagedConnection<Db> conn = await _getConnection();
+      final ManagedConnection<MongoDatabase> conn = await _getConnection();
 
       try {
-        return await statement(new MongoDatabase(conn.conn));
+        return await statement(conn.conn);
       } on ConnectionException catch (e, st) {
         if (i >= retries) {
           _log.severe(
@@ -61,8 +63,8 @@ class _MongoDbConnectionPool extends ConnectionPool<Db> {
     throw new Exception("Reached unreachable code");
   }
 
-  Future<ManagedConnection<Db>> _getConnection() async {
-    ManagedConnection<Db> con = await this.getConnection();
+  Future<ManagedConnection<MongoDatabase>> _getConnection() async {
+    ManagedConnection<MongoDatabase> con = await this.getConnection();
 
     // Theoretically this should be able to catch closed connections, but it can't catch connections that were closed by the server without notifying the client, like when the server restarts.
     int i = 0;
@@ -86,7 +88,7 @@ class _MongoDbConnectionPool extends ConnectionPool<Db> {
   static Future<Null> testConnectionString(String connectionString) async {
     final MongoDbConnectionPool pool =
         new MongoDbConnectionPool(connectionString, 1);
-    final ManagedConnection<Db> con = await pool.getConnection();
+    final ManagedConnection<MongoDatabase> con = await pool.getConnection();
     pool.releaseConnection(con);
     await pool.closeConnections();
   }

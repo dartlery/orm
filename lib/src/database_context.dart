@@ -1,13 +1,10 @@
+import 'dart:async';
 import 'package:meta/meta.dart';
 import '../meta.dart';
 import 'query.dart';
 import 'dart:mirrors';
-import 'package:connection_pool/connection_pool.dart';
 
-abstract class ADatabaseContext<T> {
-  ConnectionPool<T> _connectionPool;
-
-
+abstract class ADatabaseContext {
   ADatabaseContext() {
 
   }
@@ -15,17 +12,18 @@ abstract class ADatabaseContext<T> {
   DbStorage getStorageMetadata(dynamic object) {
     InstanceMirror im = reflect(object);
     ClassMirror cm = im.type;
-    return cm.metadata.firstWhere((InstanceMirror im) => im.type== reflectClass(DbStorage))?.reflectee??
+    return cm.metadata.firstWhere((InstanceMirror im) => im.type== reflectClass(DbStorage),
+        orElse:()=>null)?.reflectee??
       new DbStorage(cm.qualifiedName.toString());
   }
 
-  void Add(dynamic data) {
+  Future<dynamic> Add(dynamic data) async {
     DbStorage dbs = getStorageMetadata(data);
-    AddInternal(dbs, data);
+    return AddInternal(dbs, data);
   }
 
   @protected
-  void AddInternal(DbStorage storage, dynamic data);
+  Future<dynamic> AddInternal(DbStorage storage, dynamic data);
 
 
   T GetByKey<T>(dynamic primaryKey) {
@@ -36,6 +34,22 @@ abstract class ADatabaseContext<T> {
 
   }
 
+  @protected
+  void IterateDbFields(dynamic object, statement(DbField dbField, String name, dynamic value)) {
+    final InstanceMirror im = reflect(object);
+
+    for(TypeVariableMirror vm in im.type.typeVariables) {
+      final DbField metadata = vm.metadata.firstWhere((InstanceMirror im) => im.type==reflectClass(DbField))?.reflectee;
+      if(metadata?.ignore??false)
+        break;
+
+      String name = vm.simpleName.toString();
+      if((metadata?.name??"").isNotEmpty)
+        name = metadata.name;
+
+      statement(metadata, name, im.getField(vm.simpleName).reflectee);
+    }
+  }
 
 
 }
