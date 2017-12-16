@@ -1,9 +1,11 @@
 import 'dart:async';
 import '../database_context.dart';
-import '../../meta.dart';
+import 'package:orm/meta.dart';
 import 'mongo_db_connection_pool.dart';
 import 'mongo_database.dart';
 import 'package:mongo_dart/mongo_dart.dart';
+import '../orm_object.dart';
+import 'package:meta/meta.dart';
 
 class MongoDatabaseContext extends ADatabaseContext {
   final MongoDbConnectionPool _connectionPool;
@@ -12,26 +14,25 @@ class MongoDatabaseContext extends ADatabaseContext {
       : this._connectionPool = new MongoDbConnectionPool(connectionString);
 
   @override
-  Future<ObjectId> AddInternal(DbStorage storage, dynamic data) =>
+  Future<Null> NukeDatabase() =>
+      _connectionPool.databaseWrapper((MongoDatabase db) => db.nukeDatabase());
+
+  @override
+  Future<ObjectId> AddInternal(DbStorage storage, Map<String, dynamic> data) =>
       _connectionPool.databaseWrapper((MongoDatabase db) async {
         DbCollection col = db.collection(storage.name);
-
-        Map<String,dynamic> preparedData = _prepareForDatabase(data);
-        Map result = await col.insert(preparedData);
-        return result["_id"];
+        data["_id"] = new ObjectId();
+        await col.insert(data);
+        return data["_id"];
       });
 
-  Map<String, dynamic> _prepareForDatabase(dynamic object,
-      [Map<String, dynamic> data = null]) {
-    if(data==null){
-      data = <String,dynamic>{};
-    }
-    this.IterateDbFields(object,
-        (DbField dbField, String name, dynamic value) {
-      data[name] = value;
-    });
-    if(data.isEmpty)
-      throw new Exception("No database fields found in object");
-    return data;
-  }
+  @protected
+  dynamic GenerateInternalId() => new ObjectId();
+
+  @protected
+  Future<bool> InternalExistsByInternalID(DbStorage dbs, dynamic internalId) =>
+      _connectionPool.databaseWrapper<bool>((MongoDatabase db) async {
+        DbCollection col = db.collection(dbs.name);
+        return (await col.count(where.id(internalId))) > 0;
+      });
 }

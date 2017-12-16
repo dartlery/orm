@@ -1,0 +1,3 @@
+class OrmObject {
+  dynamic ormInternalId;
+}
