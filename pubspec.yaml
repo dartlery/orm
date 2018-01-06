@@ -9,6 +9,7 @@ environment:
 
 dependencies:
   meta: any
+  uuid: any
   mongo_dart: ^0.2.10
   connection_pool: ^0.1.2
 #  path: ^1.4.1

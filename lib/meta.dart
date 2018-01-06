@@ -6,23 +6,23 @@ class DbStorage {
 }
 
 final ClassMirror dbFieldMirror = reflectClass(DbField);
+final ClassMirror dbStorageMirror = reflectClass(DbStorage);
+final ClassMirror dbIndexMirror = reflectClass(DbIndex);
 
 class DbField {
   final String name;
-  final bool ignore;
-  final bool primaryKey;
   final dynamic defaultValue;
-  const DbField({this.name: "", this.ignore: false, this.defaultValue: null, this.primaryKey: false});
+
+  const DbField({this.name: "", this.defaultValue: null});
 }
 
 class DbIndex {
   final String name;
   final bool unique;
-  final bool ascending;
   final bool sparse;
   final bool text;
-  final int order;
-  const DbIndex(this.name, {this.unique: false, this.ascending: true, this.sparse: false, this.order: 0, this.text: false});
+  final Map<String, bool> fields;
+  const DbIndex(this.name, this.fields, {this.unique: false, this.sparse: false, this.text: false});
 }
 
 class DbLink {

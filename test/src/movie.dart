@@ -4,6 +4,9 @@ import 'package:orm/meta.dart';
 import 'package:orm/orm.dart';
 
 @DbStorage("Movies")
+@DbIndex("MovieTitleIndex", const {"title":true}, unique: true)
+@DbIndex("MovieYearIndex", const {"year":true}, sparse: true)
+@DbIndex("MovieDirectorIndex", const {"director":true})
 class Movie extends OrmObject {
   @DbField()
   String title;
@@ -14,7 +17,6 @@ class Movie extends OrmObject {
   @DbField()
   bool public;
 
-  @DbField(ignore: true)
   String ignoredField;
 
   @DbField()
