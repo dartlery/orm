@@ -22,7 +22,8 @@ class DbIndex {
   final bool sparse;
   final bool text;
   final Map<String, bool> fields;
-  const DbIndex(this.name, this.fields, {this.unique: false, this.sparse: false, this.text: false});
+  const DbIndex(this.name, this.fields,
+      {this.unique: false, this.sparse: false, this.text: false});
 }
 
 class DbLink {

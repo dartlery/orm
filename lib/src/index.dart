@@ -4,9 +4,10 @@ class Index {
   bool sparse;
 
   void sort() {
-    fields.sort((a,b) => a.order.compareTo(b.order));
+    fields.sort((a, b) => a.order.compareTo(b.order));
   }
 }
+
 class IndexField {
   String name;
   bool ascending;
