@@ -1,0 +1,16 @@
+name: orm_mongo
+description: A starting point for Dart libraries or applications.
+version: 0.0.1
+#homepage: https://www.example.com
+#author: Matthew <email@example.com>
+
+environment:
+  sdk: '>=1.20.1 <2.0.0'
+
+dependencies:
+  mongo_dart: ^0.2.10
+  orm:
+    path: "../orm"
+
+dev_dependencies:
+  test: ^0.12.0
