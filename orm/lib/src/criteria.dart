@@ -16,7 +16,8 @@ class Criterion {
       : this.action = criterion.action,
         this.field = criterion.field,
         this.value = criterion.value,
-        this.subCriteria = criterion.subCriteria?.map((Criteria criteria) => new Criteria.copy(criteria));
+        this.subCriteria = criterion.subCriteria
+            ?.map((Criteria criteria) => new Criteria.copy(criteria));
 }
 
 class Order {
@@ -40,7 +41,7 @@ class Query extends Criteria {
         ?.map((Order order) => new Order(order.field, order.direction)));
   }
 
-  Query.withCriteria(Criteria criteria): super.copy(criteria);
+  Query.withCriteria(Criteria criteria) : super.copy(criteria);
 
   void sort(String field, {Direction direction = Direction.ascending}) {
     _order.add(new Order(field, direction));

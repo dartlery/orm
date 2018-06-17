@@ -44,6 +44,7 @@ abstract class ADatabaseContext implements DatabaseContext {
     final DbStorage dbStorage = getStorageMetadataForType(objectType);
     await dropObjectStoreInternal(dbStorage);
   }
+
   @protected
   Future<Null> dropObjectStoreInternal(DbStorage dbs);
 
@@ -51,18 +52,17 @@ abstract class ADatabaseContext implements DatabaseContext {
 
   @override
   Future<int> countByCriteria<T extends OrmObject>(Type type, Criteria criteria,
-          {bool ignoreSkipAndLimit= false}) =>
-      countInternal(
-          getStorageMetadataForType(type), criteria);
+          {bool ignoreSkipAndLimit = false}) =>
+      countInternal(getStorageMetadataForType(type), criteria);
 
-  Future<int> countInternal(
-      DbStorage dbStorage, Criteria criteria);
+  Future<int> countInternal(DbStorage dbStorage, Criteria criteria);
 
   Criteria createInternalIdCriteria(dynamic internalId) =>
       where..equals(internalIdField, validateInternalId(internalId));
 
-  Query createInternalIdQuery(dynamic internalId) =>
-      find..equals(internalIdField, validateInternalId(internalId))..limit=1;
+  Query createInternalIdQuery(dynamic internalId) => find
+    ..equals(internalIdField, validateInternalId(internalId))
+    ..limit = 1;
 
   @override
   Future<Null> deleteByCriteria(Type type, Criteria criteria) {
@@ -71,7 +71,8 @@ abstract class ADatabaseContext implements DatabaseContext {
   }
 
   @override
-  Future<Null> deleteByInternalID(Type type, dynamic internalId) => deleteByCriteria(type, createInternalIdCriteria(internalId));
+  Future<Null> deleteByInternalID(Type type, dynamic internalId) =>
+      deleteByCriteria(type, createInternalIdCriteria(internalId));
 
   @protected
   Future<Null> deleteFromDb(DbStorage dbStorage, Criteria criteria);
@@ -85,7 +86,8 @@ abstract class ADatabaseContext implements DatabaseContext {
   }
 
   @override
-  Future<bool> existsByInternalID(Type type, dynamic internalId) => existsByCriteria(type, createInternalIdCriteria(internalId));
+  Future<bool> existsByInternalID(Type type, dynamic internalId) =>
+      existsByCriteria(type, createInternalIdCriteria(internalId));
 
   @override
   Future<List<T>> getAllByQuery<T extends OrmObject>(
@@ -94,19 +96,18 @@ abstract class ADatabaseContext implements DatabaseContext {
 
   @override
   Future<T> getByInternalID<T extends OrmObject>(
-      Type type, dynamic internalId) => getOneByQuery<T>(type,  createInternalIdQuery(internalId));
+          Type type, dynamic internalId) =>
+      getOneByQuery<T>(type, createInternalIdQuery(internalId));
 
   @override
-  Future<T> getOneByQuery<T extends OrmObject>(
-      Type type, Query query) async {
+  Future<T> getOneByQuery<T extends OrmObject>(Type type, Query query) async {
     final DbStorage dbs = getStorageMetadataForType(type);
     final Map<String, dynamic> data = await getOneFromDb(dbs, query);
     return await _convertDataMapToObject(type, data);
   }
 
   @protected
-  Future<Map<String, dynamic>> getOneFromDb(
-      DbStorage dbStorage, Query query);
+  Future<Map<String, dynamic>> getOneFromDb(DbStorage dbStorage, Query query);
 
   @override
   Future<PaginatedList<T>> getPaginatedByQuery<T extends OrmObject>(
@@ -114,15 +115,15 @@ abstract class ADatabaseContext implements DatabaseContext {
     final int count =
         await countByCriteria<T>(type, query, ignoreSkipAndLimit: true);
     final List<T> data = await getAllByQuery<T>(type, query);
-    return new PaginatedList<T>(data, query.limit, count);
+    return new PaginatedList<T>(data, query.skip, count);
   }
 
   DbStorage getStorageMetadataForClassMirrorType(ClassMirror cm) =>
-    cm.metadata
-            .firstWhere((InstanceMirror im) => im.type == dbStorageMirror,
-                orElse: () => null)
-            ?.reflectee ??
-        new DbStorage(MirrorSystem.getName(cm.simpleName));
+      cm.metadata
+          .firstWhere((InstanceMirror im) => im.type == dbStorageMirror,
+              orElse: () => null)
+          ?.reflectee ??
+      new DbStorage(MirrorSystem.getName(cm.simpleName));
 
   DbStorage getStorageMetadataForObject(OrmObject object) =>
       getStorageMetadataForClassMirrorType(reflect(object).type);
@@ -135,10 +136,10 @@ abstract class ADatabaseContext implements DatabaseContext {
       Type type, Query query) async {
     final DbStorage dbs = getStorageMetadataForType(type);
 
-    final Stream<Map<String, dynamic>> str =
-        await streamAllFromDb(dbs, query);
+    final Stream<Map<String, dynamic>> str = await streamAllFromDb(dbs, query);
 
-    return str.asyncMap<T>((Map<String, dynamic> data) async => await _convertDataMapToObject(type, data));
+    return str.asyncMap<T>((Map<String, dynamic> data) async =>
+        await _convertDataMapToObject(type, data));
   }
 
   @protected
@@ -153,11 +154,13 @@ abstract class ADatabaseContext implements DatabaseContext {
 
     final Map<String, dynamic> dataMap = await prepareDataMap(data);
 
-    await updateInternal(dbs, dataMap, createInternalIdCriteria(data.ormInternalId));
+    await updateInternal(
+        dbs, dataMap, createInternalIdCriteria(data.ormInternalId));
   }
 
   @protected
-  Future<Null> updateInternal(DbStorage storage, Map<String, dynamic> data, Criteria criteria);
+  Future<Null> updateInternal(
+      DbStorage storage, Map<String, dynamic> data, Criteria criteria);
 
   dynamic validateInternalId(dynamic internalId);
 
@@ -187,7 +190,7 @@ abstract class ADatabaseContext implements DatabaseContext {
     final List<TypeMirror> typeArgs = cm.typeArguments;
 
     if (cm.isSubtypeOf(reflectClass(OrmObject))) {
-      if (value?.toString()?.isNotEmpty??false) {
+      if (value?.toString()?.isNotEmpty ?? false) {
         final dynamic linkedObject =
             await this.getByInternalID(expectedType.reflectedType, value);
         return linkedObject;
@@ -206,7 +209,7 @@ abstract class ADatabaseContext implements DatabaseContext {
       //TypeMirror keyType = typeArgs.first;
       final TypeMirror valueType = typeArgs[1];
 
-      final Map<dynamic, dynamic> output = <dynamic,dynamic>{};
+      final Map<dynamic, dynamic> output = <dynamic, dynamic>{};
       for (dynamic key in value.keys) {
         output[key] = await _convertDataMapValue(valueType, value[key]);
       }
@@ -218,13 +221,13 @@ abstract class ADatabaseContext implements DatabaseContext {
 
   Future<Map<String, dynamic>> prepareDataMap(OrmObject object,
       [Map<String, dynamic> existingMap]) async {
-      final Map<String, dynamic> output = existingMap ?? <String, dynamic>{};
+    final Map<String, dynamic> output = existingMap ?? <String, dynamic>{};
 
-      output["_id"] = object.ormInternalId;
+    output["_id"] = object.ormInternalId;
 
     await ADatabaseContext.iterateDbFieldValues(object,
         (DbField dbField, String name, dynamic value) async {
-          output[name] = await prepareDataMapValue(value);
+      output[name] = await prepareDataMapValue(value);
     });
     if (output.isEmpty)
       throw new Exception("No database fields found in object");
@@ -244,7 +247,7 @@ abstract class ADatabaseContext implements DatabaseContext {
       }
       return output;
     } else if (value is Map) {
-      final Map<dynamic,dynamic> output = <dynamic,dynamic>{};
+      final Map<dynamic, dynamic> output = <dynamic, dynamic>{};
       for (dynamic key in value.keys) {
         output[key] = await prepareDataMapValue(value[key]);
       }
@@ -257,14 +260,13 @@ abstract class ADatabaseContext implements DatabaseContext {
   Future<DbStorage> _prepareTableForObject(OrmObject data) async {
     final DbStorage dbs = getStorageMetadataForObject(data);
 
-
     await createDataStore(dbs, reflectClass(data.runtimeType));
 
     if (!_preparedTables.contains(dbs.name)) {
       // Table preparation stuff
       final ClassMirror cm = reflect(data).type;
       for (InstanceMirror im in cm.metadata) {
-        if(im.reflectee is DbIndex) {
+        if (im.reflectee is DbIndex) {
           await applyIndex(dbs, im.reflectee);
         }
       }
@@ -274,12 +276,12 @@ abstract class ADatabaseContext implements DatabaseContext {
   }
 
   @protected
-  Future<Null> createDataStore(DbStorage storage, ClassMirror cm) async {
+  Future<Null> createDataStore(DbStorage storage, ClassMirror cm) async {}
 
-  }
-
-  static Future<Null> iterateDbFields(ClassMirror cm,
-      Future<Null> statement(VariableMirror vm, DbField dbField, String name)) async {
+  static Future<Null> iterateDbFields(
+      ClassMirror cm,
+      Future<Null> statement(
+          VariableMirror vm, DbField dbField, String name)) async {
     for (DeclarationMirror dm in cm.declarations.values.where(
         (DeclarationMirror dm) => !dm.isPrivate && (dm is VariableMirror))) {
       final DbField metadata = dm.metadata
@@ -288,16 +290,17 @@ abstract class ADatabaseContext implements DatabaseContext {
           ?.reflectee;
 
       String name = MirrorSystem.getName(dm.simpleName);
-      if ((metadata?.name ?? "").isNotEmpty)
-        name = metadata.name;
+      if ((metadata?.name ?? "").isNotEmpty) name = metadata.name;
 
       await statement(dm, metadata, name);
     }
   }
 
   @protected
-  static Future<Null> iterateDbFieldValues(OrmObject object,
-      Future<Null> statement(DbField dbField, String name, dynamic value)) async {
+  static Future<Null> iterateDbFieldValues(
+      OrmObject object,
+      Future<Null> statement(
+          DbField dbField, String name, dynamic value)) async {
     final InstanceMirror im = reflect(object);
     final ClassMirror cm = im.type;
 

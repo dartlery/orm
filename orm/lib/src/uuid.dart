@@ -15,11 +15,10 @@ class Uuid {
   int get hashCode => this._bytes.hashCode;
 
   @override
-  bool operator ==(dynamic o)  {
-    if(o is Uuid) {
-      for(int i = 0; i <16;i++) {
-        if(o._bytes[i]!=this._bytes[i])
-          return false;
+  bool operator ==(dynamic o) {
+    if (o is Uuid) {
+      for (int i = 0; i < 16; i++) {
+        if (o._bytes[i] != this._bytes[i]) return false;
         return true;
       }
     }
@@ -27,8 +26,8 @@ class Uuid {
   }
 
   @override
-  String toString({bool removeDashes=false}) {
-    if(removeDashes) {
+  String toString({bool removeDashes = false}) {
+    if (removeDashes) {
       return _uuid.unparse(this._bytes).replaceAll("-", "");
     } else {
       return _uuid.unparse(this._bytes);

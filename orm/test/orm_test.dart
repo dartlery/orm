@@ -1,4 +1,3 @@
-
 import 'package:orm/orm.dart';
 
 DatabaseContext context;

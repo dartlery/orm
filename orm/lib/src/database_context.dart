@@ -9,8 +9,7 @@ abstract class DatabaseContext {
   Future<bool> existsByCriteria(Type type, Criteria criteria);
   Future<bool> existsByInternalID(Type type, dynamic internalId);
 
-  Future<List<T>> getAllByQuery<T extends OrmObject>(
-      Type type, Query query);
+  Future<List<T>> getAllByQuery<T extends OrmObject>(Type type, Query query);
 
   Future<Stream<T>> streamAllByQuery<T extends OrmObject>(
       Type type, Query query);

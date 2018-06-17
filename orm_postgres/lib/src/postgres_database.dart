@@ -7,7 +7,7 @@ class PostgresDatabase extends PostgreSQLConnection {
       String password,
       int timeoutInSeconds = 30,
       String timeZone = "UTC",
-      bool useSSL= false})
+      bool useSSL = false})
       : super(host, port, databaseName,
             username: username,
             password: password,

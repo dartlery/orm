@@ -47,7 +47,7 @@ class PostgresConnectionPool extends ConnectionPool<PostgresDatabase> {
   }
 
   Future<T> databaseWrapper<T>(Future<T> statement(PostgresDatabase db),
-      {int retries= 5}) async {
+      {int retries = 5}) async {
     // The number of retries should be at least as much as the number of connections in the connection pool.
     // Otherwise it might run out of retries before invalidating every potentially disconnected connection in the pool.
     for (int i = 1; i <= retries; i++) {
@@ -106,19 +106,21 @@ class PostgresConnectionPool extends ConnectionPool<PostgresDatabase> {
     return con;
   }
 
-  static Future<Null> testConnectionString(String host, int port, String databaseName,
+  static Future<Null> testConnectionString(
+      String host, int port, String databaseName,
       {String username,
-        String password,
-        int timeoutInSeconds = 30,
-        String timeZone = "UTC",
-        bool useSSL= false}) async {
-    final PostgresConnectionPool pool =
-        new PostgresConnectionPool(host, port, databaseName,
-            username: username,
-            password: password,
-            timeoutInSeconds: timeoutInSeconds,
-            timeZone: timeZone,
-            useSSL: useSSL, poolSize: 1);
+      String password,
+      int timeoutInSeconds = 30,
+      String timeZone = "UTC",
+      bool useSSL = false}) async {
+    final PostgresConnectionPool pool = new PostgresConnectionPool(
+        host, port, databaseName,
+        username: username,
+        password: password,
+        timeoutInSeconds: timeoutInSeconds,
+        timeZone: timeZone,
+        useSSL: useSSL,
+        poolSize: 1);
     final ManagedConnection<PostgresDatabase> con = await pool.getConnection();
     pool.releaseConnection(con);
     await pool.closeConnections();

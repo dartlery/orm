@@ -52,7 +52,8 @@ void runTests() {
     final dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);
 
-    final bool result = await testContext.existsByInternalID(Director, internalId);
+    final bool result =
+        await testContext.existsByInternalID(Director, internalId);
     expect(result, true);
   });
 
@@ -101,8 +102,7 @@ void runTests() {
   });
 
   test("update", () async {
-    Director dir = new Director()
-    ..name = "queryable director";
+    Director dir = new Director()..name = "queryable director";
 
     final dynamic result = await testContext.add(dir);
     expect(result, isNotNull);
@@ -123,16 +123,16 @@ void runTests() {
   });
 
   test("update - nested object", () async {
-    Movie movie = new Movie();
-    movie.title = "movie with director";
-    movie.year = 2012;
-    movie.runtime = 120.50;
-    movie.public = false;
+    Movie movie = new Movie()
+      ..title = "movie with director"
+      ..year = 2012
+      ..runtime = 120.50
+      ..public = false;
     Director dir = new Director();
     dir.name = "linked director";
     movie.director = dir;
 
-    dynamic internalId = await testContext.add(movie);
+    final dynamic internalId = await testContext.add(movie);
     expect(internalId, isNotNull);
 
     movie = await testContext.getByInternalID(Movie, internalId);
@@ -168,12 +168,11 @@ void runTests() {
     expect(result, false);
 
     expect(testContext.getByInternalID(Director, internalId),
-        throwsA(const isInstanceOf<ItemNotFoundException>()));
+        throwsA(const TypeMatcher<ItemNotFoundException>()));
   });
 
   test("countByCriteria", () async {
-    Director dir = new Director();
-    dir.name = "queryable director";
+    Director dir = new Director()..name = "queryable director";
 
     dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);

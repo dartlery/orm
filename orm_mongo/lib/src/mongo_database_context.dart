@@ -46,10 +46,8 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
       });
 
   @override
-  Future<int> countInternal(
-      DbStorage dbStorage, orm.Criteria criteria) {
-    SelectorBuilder sb =
-        _convertCritera(criteria);
+  Future<int> countInternal(DbStorage dbStorage, orm.Criteria criteria) {
+    SelectorBuilder sb = _convertCritera(criteria);
     return _countFromDb(dbStorage.name, sb);
   }
 

@@ -33,7 +33,7 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
         final orm.Uuid output = generateInternalId();
         data["_id"] = output.toString(removeDashes: true);
 
-        StringBuffer statement =
+        final StringBuffer statement =
             new StringBuffer("INSERT INTO \"${storage.name}\" (\"")
               ..write(data.keys.join("\", \""))
               ..write("\") VALUES (");
@@ -74,9 +74,20 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
       });
 
   @override
-  Future<int> countInternal(DbStorage dbStorage, orm.Criteria criteria) async {
-    throw new Exception("Not implemented");
-  }
+  Future<int> countInternal(DbStorage dbStorage, orm.Criteria criteria) =>
+      _connectionPool.databaseWrapper((PostgresDatabase db) async {
+        final _CriteriaConversionResult result = _convertCriteria(criteria);
+        final StringBuffer query =
+            new StringBuffer("SELECT COUNT(*) FROM \"${dbStorage
+            .name}\"");
+        if (criteria?.sequence?.isNotEmpty ?? false) {
+          query..write(" WHERE ")..write(result.text);
+        }
+
+        final List<List<dynamic>> data = await db.query(query.toString(),
+            substitutionValues: result.parameters);
+        return data[0][0];
+      });
 
   @override
   Future<Null> createDataStore(DbStorage storage, ClassMirror cm) =>
@@ -136,13 +147,14 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
           DbStorage dbStorage, orm.Query query) =>
       _connectionPool.databaseWrapper((PostgresDatabase db) async {
         final orm.Query limitedQuery = new orm.Query.copy(query)..limit = 1;
+
         final PostgresCommand cmd = _convertQuery(dbStorage, limitedQuery);
 
         final List<Map<String, Map<String, dynamic>>> data =
             await db.mappedResultsQuery(cmd.command,
                 substitutionValues: cmd.parameters);
 
-        if(data.isEmpty) {
+        if (data.isEmpty) {
           throw new orm.ItemNotFoundException("Item not found: ${cmd.command}");
         }
 
@@ -168,11 +180,27 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
   @protected
   @override
   Future<Stream<Map<String, dynamic>>> streamAllFromDb(
-      DbStorage dbStorage, orm.Query query) async {
-    throw new Exception("Not implemented");
-  }
+          DbStorage dbStorage, orm.Query query) =>
+      _connectionPool.databaseWrapper((PostgresDatabase db) async {
+        final PostgresCommand cmd = _convertQuery(dbStorage, query);
 
-  String _generateFieldId() => new uuid.Uuid().v4().replaceAll("-", "");
+        final StreamController<Map<String, Map<String, dynamic>>> controller =
+            new StreamController<Map<String, Map<String, dynamic>>>();
+
+        db
+            .mappedResultsQuery(cmd.command, substitutionValues: cmd.parameters)
+            .then((List<Map<String, Map<String, dynamic>>> data) {
+          try {
+            data.forEach((Map data) => controller.add(data[dbStorage.name]));
+          } on Exception catch (e, st) {
+            controller.addError(e, st);
+          } finally {
+            controller.close();
+          }
+        });
+
+        return controller.stream;
+      });
 
   @override
   Future<Null> updateInternal(DbStorage storage, Map<String, dynamic> data,
@@ -212,7 +240,7 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
     } else {
       try {
         return new orm.Uuid.parse(internalId.toString());
-      } catch (e) {
+      } on Exception {
         throw new ArgumentError.value(
             internalId, "internalId", "Must be an Uuid");
       }
@@ -296,6 +324,8 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
     output.command = sql.toString();
     return output;
   }
+
+  String _generateFieldId() => new uuid.Uuid().v4().replaceAll("-", "");
 
   dynamic _prepareCriteriaValue(dynamic value) {
     if (value is orm.Uuid) {

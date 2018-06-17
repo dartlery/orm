@@ -29,7 +29,7 @@ class MongoDbConnectionPool extends ConnectionPool<MongoDatabase> {
   }
 
   Future<T> databaseWrapper<T>(Future<T> statement(MongoDatabase db),
-      {int retries= 5}) async {
+      {int retries = 5}) async {
     // The number of retries should be at least as much as the number of connections in the connection pool.
     // Otherwise it might run out of retries before invalidating every potentially disconnected connection in the pool.
     for (int i = 0; i <= retries; i++) {
