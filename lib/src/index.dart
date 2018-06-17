@@ -4,7 +4,7 @@ class Index {
   bool sparse;
 
   void sort() {
-    fields.sort((a, b) => a.order.compareTo(b.order));
+    fields.sort((IndexField a, IndexField b) => a.order.compareTo(b.order));
   }
 }
 

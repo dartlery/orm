@@ -1,7 +1,7 @@
-import 'director.dart';
-import 'actor.dart';
 import 'package:orm/meta.dart';
 import 'package:orm/orm.dart';
+
+import 'director.dart';
 
 @DbStorage("Movies")
 @DbIndex("MovieTitleIndex", const {"title": true}, unique: true)

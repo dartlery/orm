@@ -9,20 +9,20 @@ abstract class DatabaseContext {
   Future<bool> existsByCriteria(Type type, Criteria criteria);
   Future<bool> existsByInternalID(Type type, dynamic internalId);
 
-  Future<List<T>> getAllByCriteria<T extends OrmObject>(
-      Type type, Criteria criteria);
+  Future<List<T>> getAllByQuery<T extends OrmObject>(
+      Type type, Query query);
 
-  Future<Stream<T>> streamAllByCriteria<T extends OrmObject>(
-      Type type, Criteria criteria);
+  Future<Stream<T>> streamAllByQuery<T extends OrmObject>(
+      Type type, Query query);
 
   Future<int> countByCriteria<T extends OrmObject>(
       Type type, Criteria criteria);
 
-  Future<PaginatedList<T>> getPaginatedByCriteria<T extends OrmObject>(
-      Type type, Criteria criteria);
+  Future<PaginatedList<T>> getPaginatedByQuery<T extends OrmObject>(
+      Type type, Query query);
 
   Future<T> getByInternalID<T extends OrmObject>(Type type, dynamic internalId);
-  Future<T> getOneByCriteria<T extends OrmObject>(Type type, Criteria criteria);
+  Future<T> getOneByQuery<T extends OrmObject>(Type type, Query query);
 
   Future<Null> nukeDatabase();
 

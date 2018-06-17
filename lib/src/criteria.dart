@@ -1,54 +1,70 @@
+Query get find => new Query();
 Criteria get where => new Criteria();
 
-enum Actions { equals, or, sort }
+enum Actions { equals, or }
 enum Direction { ascending, descending }
 
-class QueryEntry {
+class Criterion {
   final Actions action;
   final String field;
-  final Direction direction;
   final dynamic value;
-  List<Criteria> subQueries;
+  List<Criteria> subCriteria;
 
-  QueryEntry(this.action,
-      {this.field,
-      this.value,
-      this.subQueries,
-      this.direction: Direction.ascending});
+  Criterion(this.action, {this.field, this.value, this.subCriteria});
+
+  Criterion.copy(Criterion criterion)
+      : this.action = criterion.action,
+        this.field = criterion.field,
+        this.value = criterion.value,
+        this.subCriteria = criterion.subCriteria?.map((Criteria criteria) => new Criteria.copy(criteria));
+}
+
+class Order {
+  final String field;
+  final Direction direction;
+  Order(this.field, this.direction);
+}
+
+class Query extends Criteria {
+  int limit = 0;
+  int skip = 0;
+  final List<Order> _order = <Order>[];
+
+  Query();
+
+  Query.copy(Query query) : super.copy(query) {
+    this.limit = query.limit;
+    this.skip = query.skip;
+    this._order.addAll(query
+        .getOrder()
+        ?.map((Order order) => new Order(order.field, order.direction)));
+  }
+
+  Query.withCriteria(Criteria criteria): super.copy(criteria);
+
+  void sort(String field, {Direction direction = Direction.ascending}) {
+    _order.add(new Order(field, direction));
+  }
+
+  List<Order> getOrder() => this._order;
+  bool get hasOrders => this._order.isNotEmpty;
 }
 
 class Criteria {
-  int _limit = 0;
-  int _skip = 0;
-  final List<QueryEntry> sequence = <QueryEntry>[];
+  final List<Criterion> sequence = <Criterion>[];
 
-  Criteria equals(String fieldName, dynamic value) {
-    sequence
-        .add(new QueryEntry(Actions.equals, field: fieldName, value: value));
-    return this;
+  Criteria();
+
+  Criteria.copy(Criteria criteria) {
+    sequence.addAll(criteria.sequence
+        ?.map((Criterion criterion) => new Criterion.copy(criterion)));
   }
 
-  Criteria or(List<Criteria> subStatements) {
-    sequence.add(new QueryEntry(Actions.equals, subQueries: subStatements));
-    return this;
+  void equals(String fieldName, dynamic value) {
+    sequence.add(new Criterion(Actions.equals, field: fieldName, value: value));
   }
 
-  Criteria limit(int limit) {
-    this._limit = limit;
-    return this;
+  void or(List<Criteria> subCriteria) {
+    sequence.add(new Criterion(Actions.or, subCriteria: subCriteria));
   }
-
-  Criteria sort(String field, {Direction direction: Direction.ascending}) {
-    sequence
-        .add(new QueryEntry(Actions.sort, field: field, direction: direction));
-    return this;
-  }
-
-  Criteria skip(int skip) {
-    this._skip = skip;
-    return this;
-  }
-
-  int getLimit() => this._limit;
-  int getSkip() => this._skip;
 }

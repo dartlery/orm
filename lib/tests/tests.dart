@@ -1,8 +1,8 @@
-import 'src/actor.dart';
+import 'package:orm/orm.dart';
+import 'package:test/test.dart';
+
 import 'src/director.dart';
 import 'src/movie.dart';
-import 'package:test/test.dart';
-import 'package:orm/orm.dart';
 
 export 'src/actor.dart';
 export 'src/director.dart';
@@ -33,14 +33,26 @@ void runTests() {
     expect(result, isNotNull);
   });
 
+  test("existsByCriteria", () async {
+    Director dir = new Director();
+    dir.name = "queryable director";
+
+    final dynamic internalId = await testContext.add(dir);
+    expect(internalId, isNotNull);
+
+    final bool result = await testContext.existsByCriteria(
+        Director, where..equals("name", "queryable director"));
+    expect(result, true);
+  });
+
   test("existsByInternalID", () async {
     Director dir = new Director();
     dir.name = "queryable director";
 
-    dynamic internalId = await testContext.add(dir);
+    final dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);
 
-    bool result = await testContext.existsByInternalID(Director, internalId);
+    final bool result = await testContext.existsByInternalID(Director, internalId);
     expect(result, true);
   });
 
@@ -48,7 +60,7 @@ void runTests() {
     Director dir = new Director();
     dir.name = "queryable director";
 
-    dynamic result = await testContext.add(dir);
+    final dynamic result = await testContext.add(dir);
     expect(result, isNotNull);
 
     dir = await testContext.getByInternalID(Director, result);
@@ -58,16 +70,17 @@ void runTests() {
   });
 
   test("getByInternalID - nested object", () async {
-    Movie movie = new Movie();
-    movie.title = "movie with director";
-    movie.year = 2012;
-    movie.runtime = 120.50;
-    movie.public = false;
-    Director dir = new Director();
-    dir.name = "linked director";
+    Movie movie = new Movie()
+      ..title = "movie with director"
+      ..year = 2012
+      ..runtime = 120.50
+      ..public = false;
+
+    Director dir = new Director()..name = "linked director";
+
     movie.director = dir;
 
-    dynamic internalId = await testContext.add(movie);
+    final dynamic internalId = await testContext.add(movie);
     expect(internalId, isNotNull);
 
     movie = await testContext.getByInternalID(Movie, internalId);
@@ -88,10 +101,10 @@ void runTests() {
   });
 
   test("update", () async {
-    Director dir = new Director();
-    dir.name = "queryable director";
+    Director dir = new Director()
+    ..name = "queryable director";
 
-    dynamic result = await testContext.add(dir);
+    final dynamic result = await testContext.add(dir);
     expect(result, isNotNull);
 
     dir = await testContext.getByInternalID(Director, result);
@@ -143,7 +156,7 @@ void runTests() {
     Director dir = new Director();
     dir.name = "queryable director";
 
-    dynamic internalId = await testContext.add(dir);
+    final dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);
 
     bool result = await testContext.existsByInternalID(Director, internalId);
@@ -155,7 +168,7 @@ void runTests() {
     expect(result, false);
 
     expect(testContext.getByInternalID(Director, internalId),
-        throwsA(new isInstanceOf<ItemNotFoundException>()));
+        throwsA(const isInstanceOf<ItemNotFoundException>()));
   });
 
   test("countByCriteria", () async {
@@ -195,7 +208,7 @@ void runTests() {
     await testContext.add(dir);
 
     PaginatedList<Director> result =
-        await testContext.getPaginatedByCriteria(Director, where.limit(1));
+        await testContext.getPaginatedByQuery(Director, find..limit = 1);
 
     expect(result, isNotNull);
     expect(result.count, 1);
@@ -204,8 +217,11 @@ void runTests() {
     expect(result.items[0], isNotNull);
     expect(result.items[0].name, "queryable director");
 
-    result = await testContext.getPaginatedByCriteria(
-        Director, where.limit(1).skip(1));
+    result = await testContext.getPaginatedByQuery(
+        Director,
+        find
+          ..limit = 1
+          ..skip = 1);
 
     expect(result, isNotNull);
     expect(result.count, 1);

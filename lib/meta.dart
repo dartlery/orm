@@ -13,7 +13,7 @@ class DbField {
   final String name;
   final dynamic defaultValue;
 
-  const DbField({this.name: "", this.defaultValue: null});
+  const DbField({this.name= "", this.defaultValue});
 }
 
 class DbIndex {
@@ -23,7 +23,7 @@ class DbIndex {
   final bool text;
   final Map<String, bool> fields;
   const DbIndex(this.name, this.fields,
-      {this.unique: false, this.sparse: false, this.text: false});
+      {this.unique= false, this.sparse= false, this.text= false});
 }
 
 class DbLink {
