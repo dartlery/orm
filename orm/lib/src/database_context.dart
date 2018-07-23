@@ -31,4 +31,6 @@ abstract class DatabaseContext {
 
   Future<Null> deleteByCriteria(Type type, Criteria criteria);
   Future<Null> deleteByInternalID(Type type, dynamic internalId);
+
+  Future<List<T>> search<T extends OrmObject>(Type t, String searchTerm);
 }

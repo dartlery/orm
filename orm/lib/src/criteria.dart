@@ -1,8 +1,9 @@
-Query get find => new Query();
+import 'enums.dart';
+
+Query get select => new Query();
 Criteria get where => new Criteria();
 
 enum Actions { equals, or }
-enum Direction { ascending, descending }
 
 class Criterion {
   final Actions action;

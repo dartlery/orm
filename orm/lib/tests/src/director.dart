@@ -1,9 +1,11 @@
 import 'package:orm/meta.dart';
 import 'package:orm/orm.dart';
+import 'person.dart';
 
 @DbStorage("Directors")
-@DbIndex("DirectorNameIndex", const {"name": true}, unique: true)
-class Director extends OrmObject {
+@DbIndex("DirectorNameIndex", const {"name": Direction.ascending}, unique: true)
+class Director extends Person  {
   @DbField()
-  String name;
+  int movieCount;
+
 }

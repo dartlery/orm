@@ -32,7 +32,7 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
       _connectionPool.databaseWrapper<bool>((MongoDatabase db) async {
         Map<String, int> keys = <String, int>{};
         for (String key in index.fields.keys) {
-          if (index.fields[key]) {
+          if (index.fields[key]==orm.Direction.ascending) {
             keys[key] = 1;
           } else {
             keys[key] = -1;
@@ -47,14 +47,14 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
 
   @override
   Future<int> countInternal(DbStorage dbStorage, orm.Criteria criteria) {
-    SelectorBuilder sb = _convertCritera(criteria);
+    SelectorBuilder sb = _convertCriteria(criteria);
     return _countFromDb(dbStorage.name, sb);
   }
 
   @protected
   @override
   Future<Null> deleteFromDb(DbStorage dbStorage, orm.Criteria criteria) async {
-    SelectorBuilder sb = _convertQuery(criteria);
+    final SelectorBuilder sb = _convertCriteria(criteria);
     await _deleteFromDb(dbStorage.name, sb);
   }
 
@@ -62,7 +62,7 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
   @override
   Future<bool> exists(DbStorage dbs, orm.Criteria criteria) =>
       _connectionPool.databaseWrapper<bool>((MongoDatabase db) async {
-        final SelectorBuilder sb = _convertQuery(query);
+        final SelectorBuilder sb = _convertCriteria(criteria);
 
         final DbCollection col = db.collection(dbs.name);
         return (await col.count(sb)) > 0;
@@ -95,15 +95,16 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
       _streamFromDb(dbStorage.name, _convertQuery(query));
 
   @override
-  Future<Null> updateInternal(DbStorage storage, Map<String, dynamic> data) =>
+  Future<Null> updateInternal(DbStorage storage, Map<String, dynamic> data, orm.Criteria criteria) =>
       _connectionPool.databaseWrapper((MongoDatabase db) async {
         if (!data.containsKey("_id")) {
           throw new Exception("_id must be set to update");
         }
         dynamic id = data["_id"];
         data.remove("_id");
-        DbCollection col = db.collection(storage.name);
-        await col.update(where.id(id), data);
+        final DbCollection col = db.collection(storage.name);
+        final SelectorBuilder where = _convertCriteria(criteria);
+        await col.update(where, data);
       });
 
   @override
@@ -115,7 +116,7 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
     } else {
       try {
         return ObjectId.parse(internalId.toString());
-      } catch (e) {
+      } on Exception {
         throw new ArgumentError.value(
             internalId, "internalId", "Must be an ObjectID");
       }
@@ -127,10 +128,9 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
       throw new Exception("Database error: $data['\$err']");
   }
 
-  SelectorBuilder _convertQuery(orm.Query query,
-      {bool ignoreSkipAndLimit = false}) {
+  SelectorBuilder _convertCriteria(orm.Criteria criteria) {
     SelectorBuilder output = where;
-    for (orm.Criterion entry in query.sequence) {
+    for (orm.Criterion entry in criteria.sequence) {
       String field = entry.field;
       if (entry.field == internalIdField) {
         field = "_id";
@@ -139,23 +139,32 @@ class MongoDatabaseContext extends orm.ADatabaseContext {
         case orm.Actions.equals:
           output = output.eq(field, entry.value);
           break;
-        case orm.Actions.sort:
-          output.sortBy(entry.field,
-              descending: entry.direction == orm.Direction.descending);
-          break;
         default:
           throw new Exception(
               "Query action not supported: ${entry.action.toString()}");
       }
     }
-    if (!ignoreSkipAndLimit) {
+    return output;
+
+  }
+
+  SelectorBuilder _convertQuery(orm.Query query) {
+    final SelectorBuilder output = _convertCriteria(query);
+
+    if(query.hasOrders) {
+      for(orm.Order order in query.getOrder()) {
+        output.sortBy(order.field,
+            descending: order.direction == orm.Direction.descending);
+      }
+    }
+
+
       if (query.limit > 0) {
         output.limit(query.limit);
       }
       if (query.skip > 0) {
         output.skip(query.skip);
       }
-    }
     return output;
   }
 

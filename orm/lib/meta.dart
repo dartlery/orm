@@ -1,4 +1,5 @@
 import 'dart:mirrors';
+import 'src/enums.dart';
 
 class DbStorage {
   final String name;
@@ -21,7 +22,7 @@ class DbIndex {
   final bool unique;
   final bool sparse;
   final bool text;
-  final Map<String, bool> fields;
+  final Map<String, Direction> fields;
   const DbIndex(this.name, this.fields,
       {this.unique = false, this.sparse = false, this.text = false});
 }

@@ -4,9 +4,9 @@ import 'package:orm/orm.dart';
 import 'director.dart';
 
 @DbStorage("Movies")
-@DbIndex("MovieTitleIndex", const {"title": true}, unique: true)
-@DbIndex("MovieYearIndex", const {"year": true}, sparse: true)
-@DbIndex("MovieDirectorIndex", const {"director": true})
+@DbIndex("MovieTitleIndex", const {"title": Direction.ascending}, unique: true)
+@DbIndex("MovieYearIndex", const {"year": Direction.ascending}, sparse: true)
+@DbIndex("MovieDirectorIndex", const {"director": Direction.ascending})
 class Movie extends OrmObject {
   @DbField()
   String title;

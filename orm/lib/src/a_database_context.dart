@@ -60,7 +60,7 @@ abstract class ADatabaseContext implements DatabaseContext {
   Criteria createInternalIdCriteria(dynamic internalId) =>
       where..equals(internalIdField, validateInternalId(internalId));
 
-  Query createInternalIdQuery(dynamic internalId) => find
+  Query createInternalIdQuery(dynamic internalId) => select
     ..equals(internalIdField, validateInternalId(internalId))
     ..limit = 1;
 
@@ -263,17 +263,24 @@ abstract class ADatabaseContext implements DatabaseContext {
     await createDataStore(dbs, reflectClass(data.runtimeType));
 
     if (!_preparedTables.contains(dbs.name)) {
-      // Table preparation stuff
-      final ClassMirror cm = reflect(data).type;
-      for (InstanceMirror im in cm.metadata) {
-        if (im.reflectee is DbIndex) {
-          await applyIndex(dbs, im.reflectee);
-        }
+      for (DbIndex dbi in _getDbIndexes(data.runtimeType)) {
+          await applyIndex(dbs, dbi);
       }
     }
 
     return dbs;
   }
+  List<DbIndex> _getDbIndexes(Type t, {bool textIndexOnly= false}) {
+    final ClassMirror cm = reflectClass(t);
+    final List<DbIndex> output = <DbIndex>[];
+    for (InstanceMirror im in cm.metadata) {
+      if (im.reflectee is DbIndex  && (!textIndexOnly || im.reflectee.text)) {
+        output.add(im.reflectee);
+      }
+    }
+    return output;
+  }
+
 
   @protected
   Future<Null> createDataStore(DbStorage storage, ClassMirror cm) async {}
@@ -282,17 +289,25 @@ abstract class ADatabaseContext implements DatabaseContext {
       ClassMirror cm,
       Future<Null> statement(
           VariableMirror vm, DbField dbField, String name)) async {
-    for (DeclarationMirror dm in cm.declarations.values.where(
-        (DeclarationMirror dm) => !dm.isPrivate && (dm is VariableMirror))) {
-      final DbField metadata = dm.metadata
-          .firstWhere((InstanceMirror im) => im.type == _dbFieldType,
-              orElse: () => null)
-          ?.reflectee;
+    ClassMirror classMirror = cm;
+    while(classMirror!=null) {
+      for (DeclarationMirror dm in classMirror.declarations.values.where(
+              (DeclarationMirror dm) =>
+          !dm.isPrivate && (dm is VariableMirror))) {
+        final DbField metadata = dm.metadata
+            .firstWhere((InstanceMirror im) => im.type == _dbFieldType,
+            orElse: () => null)
+            ?.reflectee;
+        if (metadata == null)
+          continue;
 
-      String name = MirrorSystem.getName(dm.simpleName);
-      if ((metadata?.name ?? "").isNotEmpty) name = metadata.name;
+        String name = MirrorSystem.getName(dm.simpleName);
+        if ((metadata?.name ?? "").isNotEmpty)
+          name = metadata.name;
 
-      await statement(dm, metadata, name);
+        await statement(dm, metadata, name);
+      }
+      classMirror = classMirror.superclass;
     }
   }
 
@@ -309,4 +324,19 @@ abstract class ADatabaseContext implements DatabaseContext {
         (DeclarationMirror dm, DbField dbField, String name) =>
             statement(dbField, name, im.getField(dm.simpleName).reflectee));
   }
+
+  @override
+  Future<List<T>> search<T extends OrmObject>(Type type, String searchTerm) {
+    final List<DbIndex> indexes = _getDbIndexes(type, textIndexOnly: true);
+    if(indexes.isEmpty)
+      throw new Exception("Cannot perform search on an object store that has no text indexes");
+
+    return searchInternal(getStorageMetadataForType(type), indexes, searchTerm);
+  }
+
+  @protected
+  Future<Stream<Map<String, dynamic>>> searchInternal(
+      DbStorage storage, List<DbIndex> searchIndexes, String searchTerm);
+
+
 }

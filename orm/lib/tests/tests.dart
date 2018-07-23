@@ -27,6 +27,7 @@ void runTests() {
     movie.public = false;
     Director dir = new Director();
     dir.name = "linked director";
+    dir.movieCount = 100;
     movie.director = dir;
 
     dynamic result = await testContext.add(movie);
@@ -36,6 +37,7 @@ void runTests() {
   test("existsByCriteria", () async {
     Director dir = new Director();
     dir.name = "queryable director";
+    dir.movieCount = 100;
 
     final dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);
@@ -48,6 +50,7 @@ void runTests() {
   test("existsByInternalID", () async {
     Director dir = new Director();
     dir.name = "queryable director";
+    dir.movieCount = 100;
 
     final dynamic internalId = await testContext.add(dir);
     expect(internalId, isNotNull);
@@ -60,6 +63,7 @@ void runTests() {
   test("getByInternalID", () async {
     Director dir = new Director();
     dir.name = "queryable director";
+    dir.movieCount = 100;
 
     final dynamic result = await testContext.add(dir);
     expect(result, isNotNull);
@@ -67,6 +71,7 @@ void runTests() {
     dir = await testContext.getByInternalID(Director, result);
     expect(dir, isNotNull);
     expect(dir.name, "queryable director");
+    expect(dir.movieCount, 100);
     expect(dir.ormInternalId, result);
   });
 
@@ -78,6 +83,7 @@ void runTests() {
       ..public = false;
 
     Director dir = new Director()..name = "linked director";
+    dir.movieCount = 100;
 
     movie.director = dir;
 
@@ -92,17 +98,20 @@ void runTests() {
 
     expect(movie.director, isNotNull);
     expect(movie.director.name, "linked director");
+    expect(movie.director.movieCount, 100);
 
     dir = await testContext.getByInternalID(
         Director, movie.director.ormInternalId);
 
     expect(dir, isNotNull);
     expect(dir.name, "linked director");
+    expect(dir.movieCount, 100);
     expect(dir.ormInternalId, movie.director.ormInternalId);
   });
 
   test("update", () async {
     Director dir = new Director()..name = "queryable director";
+    dir.movieCount = 10;
 
     final dynamic result = await testContext.add(dir);
     expect(result, isNotNull);
@@ -110,15 +119,18 @@ void runTests() {
     dir = await testContext.getByInternalID(Director, result);
     expect(dir, isNotNull);
     expect(dir.name, "queryable director");
+    expect(dir.movieCount, 10);
     expect(dir.ormInternalId, result);
 
     dir.name = "updated name";
+    dir.movieCount = 100;
 
     await testContext.update(dir);
 
     dir = await testContext.getByInternalID(Director, result);
     expect(dir, isNotNull);
     expect(dir.name, "updated name");
+    expect(dir.movieCount, 100);
     expect(dir.ormInternalId, result);
   });
 
@@ -130,6 +142,7 @@ void runTests() {
       ..public = false;
     Director dir = new Director();
     dir.name = "linked director";
+    dir.movieCount = 10;
     movie.director = dir;
 
     final dynamic internalId = await testContext.add(movie);
@@ -142,6 +155,7 @@ void runTests() {
 
     dir = new Director();
     dir.name = "new director";
+    dir.movieCount = 100;
     movie.director = dir;
 
     await testContext.update(movie);
@@ -150,6 +164,7 @@ void runTests() {
 
     expect(movie.title, "different title");
     expect(movie.director.name, "new director");
+    expect(movie.director.movieCount, 100);
   });
 
   test("deleteByInternalID", () async {
@@ -168,7 +183,7 @@ void runTests() {
     expect(result, false);
 
     expect(testContext.getByInternalID(Director, internalId),
-        throwsA(const TypeMatcher<ItemNotFoundException>()));
+        throwsA(const isInstanceOf<ItemNotFoundException>()));
   });
 
   test("countByCriteria", () async {
@@ -207,7 +222,7 @@ void runTests() {
     await testContext.add(dir);
 
     PaginatedList<Director> result =
-        await testContext.getPaginatedByQuery(Director, find..limit = 1);
+        await testContext.getPaginatedByQuery(Director, select..limit = 1);
 
     expect(result, isNotNull);
     expect(result.count, 1);
@@ -218,7 +233,7 @@ void runTests() {
 
     result = await testContext.getPaginatedByQuery(
         Director,
-        find
+        select
           ..limit = 1
           ..skip = 1);
 

@@ -62,7 +62,7 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
 
         final List<String> fields = <String>[];
         for (String key in index.fields.keys) {
-          if (index.fields[key]) {
+          if (index.fields[key] == orm.Direction.ascending) {
             fields.add("\"$key\" ASC");
           } else {
             fields.add("\"$key\" DESC");
@@ -180,18 +180,21 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
   @protected
   @override
   Future<Stream<Map<String, dynamic>>> streamAllFromDb(
-          DbStorage dbStorage, orm.Query query) =>
-      _connectionPool.databaseWrapper((PostgresDatabase db) async {
-        final PostgresCommand cmd = _convertQuery(dbStorage, query);
+          DbStorage dbStorage, orm.Query query) {
+    final PostgresCommand cmd = _convertQuery(dbStorage, query);
+    return _streamFromDb(dbStorage.name, cmd);
+  }
 
+  Future<Stream<Map<String, dynamic>>> _streamFromDb(String tableName, PostgresCommand cmd) =>
+      _connectionPool.databaseWrapper((PostgresDatabase db) async {
         final StreamController<Map<String, Map<String, dynamic>>> controller =
-            new StreamController<Map<String, Map<String, dynamic>>>();
+        new StreamController<Map<String, Map<String, dynamic>>>();
 
         db
             .mappedResultsQuery(cmd.command, substitutionValues: cmd.parameters)
             .then((List<Map<String, Map<String, dynamic>>> data) {
           try {
-            data.forEach((Map data) => controller.add(data[dbStorage.name]));
+            data.forEach((Map data) => controller.add(data[tableName]));
           } on Exception catch (e, st) {
             controller.addError(e, st);
           } finally {
@@ -201,6 +204,10 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
 
         return controller.stream;
       });
+
+
+
+
 
   @override
   Future<Null> updateInternal(DbStorage storage, Map<String, dynamic> data,
@@ -332,6 +339,24 @@ class PostgresDatabaseContext extends orm.ADatabaseContext {
       return value.toString(removeDashes: true);
     }
     return value;
+  }
+
+  @protected
+  @override
+  Future<Stream<Map<String, dynamic>>> searchInternal(
+      DbStorage storage, List<DbIndex> searchIndexes, String searchTerm)  {
+    if (searchIndexes?.isEmpty ?? true) {
+      throw new ArgumentError(
+          "searchIndexes must be a List with 1 or more values");
+    }
+
+    final StringBuffer sql =
+        new StringBuffer("SELECT * FROM \"${storage.name}\" WHERE to_tsvector(")
+          ..write("\"${searchIndexes.map(
+            (DbIndex idx) => idx.fields.keys.join("\" || ' ' || \"")).join("\" || ' || \"")}\"")
+          ..write(") @@ to_tsquery(@query)");
+
+    return _streamFromDb(storage.name, new PostgresCommand(sql.toString(), <String, String>{"@query": searchTerm}));
   }
 }
 
